@@ -1,0 +1,8 @@
+# Gramatica extra para probar todos los pasos (epsilon, unitarias, inutiles,
+# terminales mezclados y producciones largas). Genera a^n b^n y cosas asi.
+S -> A S B | C
+A -> a A S | a | e
+B -> S b S | A | b b
+C -> c | D
+D -> D d
+E -> e

@@ -1,0 +1,33 @@
+digraph arbol {
+  node [fontname="Helvetica"];
+  labelloc="t"; label="( id + id ) * id (sin auxiliares)";
+  n0 [label="E", shape=ellipse];
+  n1 [label="F", shape=ellipse];
+  n2 [label="(", shape=plaintext, fontcolor="#1a5fb4"];
+  n1 -> n2;
+  n3 [label="E", shape=ellipse];
+  n4 [label="T", shape=ellipse];
+  n5 [label="id", shape=plaintext, fontcolor="#1a5fb4"];
+  n4 -> n5;
+  n3 -> n4;
+  n6 [label="X", shape=ellipse];
+  n7 [label="+", shape=plaintext, fontcolor="#1a5fb4"];
+  n6 -> n7;
+  n8 [label="T", shape=ellipse];
+  n9 [label="id", shape=plaintext, fontcolor="#1a5fb4"];
+  n8 -> n9;
+  n6 -> n8;
+  n3 -> n6;
+  n1 -> n3;
+  n10 [label=")", shape=plaintext, fontcolor="#1a5fb4"];
+  n1 -> n10;
+  n0 -> n1;
+  n11 [label="Y", shape=ellipse];
+  n12 [label="*", shape=plaintext, fontcolor="#1a5fb4"];
+  n11 -> n12;
+  n13 [label="F", shape=ellipse];
+  n14 [label="id", shape=plaintext, fontcolor="#1a5fb4"];
+  n13 -> n14;
+  n11 -> n13;
+  n0 -> n11;
+}

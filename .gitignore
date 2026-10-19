@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# archivos que genera el programa al correr
+arboles/arbol_*
+gramaticas/*-cnf.txt
