@@ -1,5 +1,6 @@
 # Funciones para mostrar el arbol de parseo: en consola, con corchetes y como
 # imagen usando Graphviz (si esta instalado).
+# Un nodo es (variable, [hijos]) y una hoja es el string de la palabra.
 
 import os
 import shutil
@@ -7,6 +8,8 @@ import subprocess
 
 
 def imprimir_arbol(nodo, prefijo="", es_ultimo=True, es_raiz=True):
+    # dibuja el arbol con ├── y └──; el prefijo lleva las lineas │ de los
+    # niveles de arriba
     if isinstance(nodo, str):
         conector = "" if es_raiz else ("└── " if es_ultimo else "├── ")
         print(prefijo + conector + '"' + nodo + '"')
@@ -47,16 +50,19 @@ def aplanar(nodo, auxiliares):
 
 
 def arbol_original(nodo, auxiliares):
+    # la raiz nunca es auxiliar, asi que la lista siempre tiene un solo nodo
     return aplanar(nodo, auxiliares)[0]
 
 
 def a_dot(nodo, titulo=""):
+    # genera el texto del arbol en formato DOT (el que usa Graphviz)
     lineas = ["digraph arbol {", '  node [fontname="Helvetica"];']
     if titulo:
         lineas.append('  labelloc="t"; label="%s";' % titulo.replace('"', "'"))
-    contador = [0]
+    contador = [0]  # lista para poder modificarlo desde visitar()
 
     def visitar(n):
+        # agrega el nodo y sus hijos, y regresa el id que se le dio
         mi_id = "n%d" % contador[0]
         contador[0] += 1
         if isinstance(n, str):
@@ -87,6 +93,7 @@ def guardar_imagen(nodo, ruta_sin_ext, titulo=""):
     if shutil.which("dot"):
         ruta_png = ruta_sin_ext + ".png"
         try:
+            # igual que correr: dot -Tpng arbol.dot -o arbol.png
             subprocess.run(["dot", "-Tpng", ruta_dot, "-o", ruta_png], check=True,
                            capture_output=True)
             return ruta_png

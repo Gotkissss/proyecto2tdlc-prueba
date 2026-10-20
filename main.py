@@ -1,6 +1,9 @@
 # Proyecto 2 - Teoria de la Computacion
 # Parser CYK para una gramatica libre de contexto.
 #
+# Lee la gramatica, la pasa a CNF, y por cada frase corre el CYK y muestra
+# SI/NO, el tiempo y el arbol de parseo.
+#
 # Uso:
 #   python main.py                                   (modo interactivo con la gramatica en ingles)
 #   python main.py "She eats a cake with a fork"     (una sola frase)
@@ -23,6 +26,7 @@ try:
 except Exception:
     pass
 
+# carpeta del proyecto, para encontrar gramaticas/ y arboles/ desde donde sea
 CARPETA = os.path.dirname(os.path.abspath(__file__))
 SIGNOS = ".,;:!?"
 
@@ -45,12 +49,15 @@ def tokenizar(frase, terminales):
 
 
 def analizar(frase, g_cnf, auxiliares, indices, terminales, opciones, num=1):
+    # analiza una frase y muestra todo; num es el numero de frase (para el
+    # nombre de la imagen)
     palabras = tokenizar(frase, terminales)
     print("\nFrase: " + frase)
     print("Palabras: " + str(palabras))
 
     desconocidas = [w for w in palabras if w not in terminales]
 
+    # solo se mide el CYK
     inicio = time.perf_counter()
     acepta, tabla = cyk(g_cnf, palabras, indices)
     fin = time.perf_counter()
@@ -80,6 +87,7 @@ def analizar(frase, g_cnf, auxiliares, indices, terminales, opciones, num=1):
         print("\nArbol de parseo (gramatica en CNF):")
         imprimir_arbol(arbol_cnf)
         if auxiliares:
+            # el mismo arbol pero sin las variables que invento la CNF
             arbol_og = arbol_original(arbol_cnf, auxiliares)
             print("\nArbol sin las variables auxiliares de la CNF:")
             imprimir_arbol(arbol_og)
@@ -110,6 +118,7 @@ def main():
     print(g)
     print("=" * 60)
 
+    # la conversion se mide aparte del CYK
     inicio = time.perf_counter()
     g_cnf, auxiliares = convertir_a_cnf(g, verbose=opciones.pasos)
     tiempo_cnf = (time.perf_counter() - inicio) * 1000
@@ -118,6 +127,7 @@ def main():
     print("(%d producciones, %d variables; conversion en %.3f ms; es CNF: %s)"
           % (g_cnf.num_producciones(), len(g_cnf.variables()), tiempo_cnf, "si" if es_cnf(g_cnf) else "NO"))
 
+    # ingles.txt -> ingles-cnf.txt
     base, ext = os.path.splitext(opciones.gramatica)
     ruta_cnf = base + "-cnf" + ext
     guardar_gramatica(g_cnf, ruta_cnf)

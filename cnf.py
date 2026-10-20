@@ -1,4 +1,6 @@
 # Simplificacion de gramaticas y conversion a Forma Normal de Chomsky (CNF).
+# El CYK necesita la gramatica en CNF porque siempre parte cada pedazo de la
+# frase en dos y los junta con una regla A -> B C.
 #
 # Una gramatica esta en CNF si todas sus producciones son de la forma:
 #   A -> B C      (dos variables)
@@ -11,6 +13,9 @@
 #   3. Eliminar simbolos inutiles (no generadores y no alcanzables)
 #   4. Reemplazar terminales en producciones largas (A -> a B  =>  A -> X B, X -> a)
 #   5. Partir producciones de mas de 2 variables (A -> B C D  =>  A -> B Y, Y -> C D)
+#
+# Las epsilon van antes que las unitarias porque al quitarlas salen unitarias
+# nuevas (E -> T X con X anulable deja E -> T).
 
 from itertools import product
 
@@ -21,6 +26,7 @@ class GeneradorNombres:
     # Da nombres nuevos para variables que no choquen con los que ya existen.
     # Primero intenta con letras sueltas (como hizo el profe en 1-cnf.txt) y si
     # ya no hay, usa X1, X2, ...
+    # Se usa el mismo objeto en todos los pasos para que no se repitan nombres.
     def __init__(self, g):
         self.usados = set(g.variables()) | set(g.terminales())
         self.contador = 0
@@ -39,6 +45,7 @@ class GeneradorNombres:
 
 
 def log(verbose, texto=""):
+    # imprime solo con la opcion --pasos
     if verbose:
         print(texto)
 
@@ -47,7 +54,8 @@ def log(verbose, texto=""):
 # Paso 1: producciones epsilon
 # ---------------------------------------------------------------------------
 def anulables(g):
-    # variables que pueden derivar epsilon (punto fijo)
+    # variables que pueden derivar epsilon (punto fijo: se repite hasta que
+    # en una vuelta ya no se agregue ninguna)
     nul = set()
     cambio = True
     while cambio:
@@ -64,19 +72,22 @@ def anulables(g):
 
 
 def eliminar_epsilon(g, nombres, verbose=False):
+    # Por cada produccion se agregan todas las versiones que salen de quitar o
+    # dejar cada simbolo anulable. Ej: E -> T X con X anulable => E -> T X | T
     nul = anulables(g)
     log(verbose, "  Variables anulables: " + (", ".join(sorted(nul)) if nul else "(ninguna)"))
 
     nueva = Gramatica(g.inicial, {v: [] for v in g.producciones})
     for var, cuerpos in g.producciones.items():
         for c in cuerpos:
-            # para cada simbolo anulable hay 2 opciones: dejarlo o quitarlo
+            # para cada simbolo anulable hay 2 opciones: dejarlo o quitarlo (None)
             opciones = []
             for s in c:
                 if s in nul:
                     opciones.append([s, None])
                 else:
                     opciones.append([s])
+            # product saca todas las combinaciones de las opciones
             for combinacion in product(*opciones):
                 cuerpo = tuple(s for s in combinacion if s is not None)
                 if len(cuerpo) > 0:
@@ -98,6 +109,7 @@ def eliminar_epsilon(g, nombres, verbose=False):
 # ---------------------------------------------------------------------------
 def pares_unitarios(g):
     # para cada A, el conjunto de B tal que A =>* B usando solo unitarias
+    # (recorrido en anchura desde A)
     pares = {}
     for a in g.producciones:
         alcanzados = [a]
@@ -113,6 +125,7 @@ def pares_unitarios(g):
 
 
 def eliminar_unitarias(g, verbose=False):
+    # A se queda con todas las producciones no unitarias de cada B que alcanza
     pares = pares_unitarios(g)
     for a, lista in pares.items():
         if len(lista) > 1:
@@ -149,6 +162,7 @@ def generadores(g):
 
 
 def alcanzables(g):
+    # variables a las que se llega desde la inicial
     vistos = [g.inicial]
     i = 0
     while i < len(vistos):
@@ -161,7 +175,8 @@ def alcanzables(g):
 
 
 def eliminar_inutiles(g, verbose=False):
-    # primero los no generadores (el orden importa!)
+    # primero los no generadores (el orden importa!): al quitarlos puede que
+    # otra variable quede inalcanzable
     gen = generadores(g)
     no_gen = [v for v in g.producciones if v not in gen]
     log(verbose, "  No generadoras: " + (", ".join(no_gen) if no_gen else "(ninguna)"))
@@ -192,8 +207,10 @@ def eliminar_inutiles(g, verbose=False):
 # Paso 4: terminales dentro de producciones de largo >= 2
 # ---------------------------------------------------------------------------
 def reemplazar_terminales(g, nombres, auxiliares, verbose=False):
+    # Ej: F -> ( E )  =>  F -> A E B,  A -> (,  B -> )
+    # Las variables nuevas se guardan en 'auxiliares' para quitarlas del arbol.
     nueva = Gramatica(g.inicial, {v: [] for v in g.producciones})
-    var_de_terminal = {}
+    var_de_terminal = {}  # terminal -> variable nueva (se reusa si se repite)
     for var, cuerpos in g.producciones.items():
         for c in cuerpos:
             if len(c) < 2:
@@ -220,6 +237,8 @@ def reemplazar_terminales(g, nombres, auxiliares, verbose=False):
 # Paso 5: partir producciones largas
 # ---------------------------------------------------------------------------
 def binarizar(g, nombres, auxiliares, verbose=False):
+    # Se parte por la derecha, igual que en 1-cnf.txt del profe:
+    #   F -> A E B  =>  F -> A G,  G -> E B
     nueva = Gramatica(g.inicial, {v: [] for v in g.producciones})
     var_de_cola = {}  # para reusar la misma variable si la cola se repite
 
@@ -244,6 +263,7 @@ def binarizar(g, nombres, auxiliares, verbose=False):
             if len(cola) == 2:
                 nueva.agregar(x, cola)
             else:
+                # la cola todavia es larga, se vuelve a partir
                 pendientes.append((x, cola))
         nueva.agregar(var, (c[0], x))
     return nueva
@@ -251,6 +271,7 @@ def binarizar(g, nombres, auxiliares, verbose=False):
 
 # ---------------------------------------------------------------------------
 def es_cnf(g):
+    # revisa que el resultado de verdad haya quedado en CNF
     for var, cuerpos in g.producciones.items():
         for c in cuerpos:
             if len(c) == 0:
@@ -304,6 +325,7 @@ def convertir_a_cnf(g, verbose=False):
 
 
 def indentar(g):
+    # para que la gramatica se vea con sangria al imprimir los pasos
     texto = str(g)
     if texto == "":
         texto = "(sin producciones)"

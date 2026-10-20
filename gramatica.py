@@ -14,6 +14,11 @@ EPSILON = ("e", "ε", "epsilon")
 
 
 class Gramatica:
+    # Guarda la variable inicial y las producciones.
+    # Ejemplo: NP -> Det N | he | she  queda como
+    #   {"NP": [("Det", "N"), ("he",), ("she",)]}
+    # Los lados derechos son tuplas para poder usarlos como llaves en cyk.py.
+
     def __init__(self, inicial, producciones):
         self.inicial = inicial
         # diccionario: variable -> lista de tuplas (cada tupla es un lado derecho)
@@ -24,9 +29,11 @@ class Gramatica:
         return list(self.producciones.keys())
 
     def es_variable(self, simbolo):
+        # es variable si tiene producciones propias, si no es terminal
         return simbolo in self.producciones
 
     def terminales(self):
+        # junta todos los simbolos que no son variables, sin repetir
         ts = []
         for cuerpos in self.producciones.values():
             for cuerpo in cuerpos:
@@ -52,6 +59,7 @@ class Gramatica:
         return sum(len(c) for c in self.producciones.values())
 
     def __str__(self):
+        # texto con el mismo formato del archivo (A -> B C | a)
         lineas = []
         # la inicial siempre de primero
         orden = [self.inicial] + [v for v in self.producciones if v != self.inicial]
@@ -76,6 +84,9 @@ def leer_gramatica(ruta):
 
 
 def leer_gramatica_texto(texto):
+    # Se lee en dos pasadas: en la primera se sacan todas las variables (lado
+    # izquierdo) y en la segunda se arman las producciones. Asi ya se sabe que
+    # es variable aunque se use antes de definirse.
     inicial = None
     prods = {}
     lineas = []
@@ -113,5 +124,6 @@ def leer_gramatica_texto(texto):
 
 
 def guardar_gramatica(g, ruta):
+    # se usa para guardar la version en CNF (ej. gramaticas/1-cnf.txt)
     with open(ruta, "w", encoding="utf-8") as f:
         f.write(str(g) + "\n")

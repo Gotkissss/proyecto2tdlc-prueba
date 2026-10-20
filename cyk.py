@@ -20,6 +20,7 @@ def preparar_indices(g):
     # para no recorrer toda la gramatica en cada celda, armamos diccionarios:
     #   por_terminal['cat'] = ['N']
     #   por_par[('Det','N')] = ['NP']
+    # se calculan una sola vez y sirven para todas las frases
     por_terminal = defaultdict(list)
     por_par = defaultdict(list)
     for var, cuerpos in g.producciones.items():
@@ -35,6 +36,7 @@ def cyk(g, palabras, indices=None):
     """Regresa (acepta, tabla).
     tabla[i][j] es un diccionario  variable -> lista de backpointers
     un backpointer es ('t', palabra) para las hojas o (k, B, C) para A -> B C"""
+    # Ej. con "she eats a cake": tabla[2][3] = {'NP': [(2, 'Det', 'N')]}
     n = len(palabras)
     if n == 0:
         # la cadena vacia solo es aceptada si S -> e
@@ -44,6 +46,7 @@ def cyk(g, palabras, indices=None):
         indices = preparar_indices(g)
     por_terminal, por_par = indices
 
+    # un diccionario distinto por celda (con [[{}]*n]*n todas serian el mismo)
     tabla = [[{} for _ in range(n)] for _ in range(n)]
 
     # largo 1
@@ -51,11 +54,12 @@ def cyk(g, palabras, indices=None):
         for a in por_terminal.get(w.lower(), []):
             tabla[i][i][a] = [("t", w)]
 
-    # largos 2..n
+    # largos 2..n (de corto a largo, porque cada celda usa celdas mas cortas)
     for largo in range(2, n + 1):
         for i in range(0, n - largo + 1):
             j = i + largo - 1
             celda = tabla[i][j]
+            # izquierda [i..k], derecha [k+1..j]
             for k in range(i, j):
                 izq = tabla[i][k]
                 der = tabla[k + 1][j]
@@ -85,6 +89,8 @@ def construir_arbol(tabla, var, i, j, opcion=0):
 
 def contar_arboles(tabla, var, i, j, memo=None):
     # cuantos arboles de parseo distintos hay (si es > 1 la frase es ambigua)
+    # se suma por cada backpointer y se multiplica izquierda x derecha;
+    # memo guarda lo que ya se calculo
     if memo is None:
         memo = {}
     clave = (var, i, j)
@@ -136,6 +142,7 @@ def imprimir_tabla(tabla, palabras):
     ancho = min(ancho, 22)
 
     def corta(t):
+        # recorta el texto si no cabe en la columna
         return t if len(t) <= ancho - 2 else t[: ancho - 4] + ".."
 
     for largo in range(n, 0, -1):

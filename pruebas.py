@@ -67,6 +67,7 @@ EXPR_NO = ["", "+", "id +", "id id", "( id", "id )", "( )", "* id", "id + * id",
 
 
 def correr_casos(nombre_archivo, casos_si, casos_no):
+    # corre cada frase y compara con el resultado esperado
     g = leer_gramatica(os.path.join(CARPETA, "gramaticas", nombre_archivo))
     g_cnf, aux = convertir_a_cnf(g)
     indices = preparar_indices(g_cnf)
@@ -114,6 +115,7 @@ def generar_lenguaje(g, max_largo):
                 pos = i
                 break
         if pos == -1:
+            # ya no tiene variables, es una cadena del lenguaje
             resultado.add(forma)
             continue
         for cuerpo in g.producciones[forma[pos]]:
@@ -129,6 +131,8 @@ def generar_lenguaje(g, max_largo):
 
 
 def verificar_equivalencia(nombre_archivo, max_largo):
+    # prueba todas las combinaciones de terminales y compara lo que acepta el
+    # CYK (con la CNF) contra lo que genera la gramatica original
     g = leer_gramatica(os.path.join(CARPETA, "gramaticas", nombre_archivo))
     g_cnf, _ = convertir_a_cnf(g)
     indices = preparar_indices(g_cnf)
